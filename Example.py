@@ -19,9 +19,8 @@ svr.fit(x_train_set, y_train.values.ravel())
 prediction_test = svr.predict(x_test_set)
 #prediction_train = svr.predict(x_train_set)
 
-euclidean = Euclidean_Neighbors(train_set, test_set, prediction_test, 'target', svr)
-prediction_final = euclidean.closest_points_and_difference(25)
+euclidean = Euclidean_Neighbors(train_set, test_set, prediction_test, 'target', svr, 25)
+prediction_final = euclidean.closest_points_and_difference()
 print(prediction_final)
 
-print(mean_squared_error(prediction_final['Prediction'], prediction_final['target'], squared=False))
-print(mean_squared_error(prediction_final['New_Prediction'], prediction_final['target'], squared=False))
+print(euclidean.model_compare())

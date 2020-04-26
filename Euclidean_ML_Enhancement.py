@@ -1,22 +1,25 @@
 import pandas as pd
 from scipy import spatial
+from sklearn.metrics import mean_squared_error
 
 
 class Euclidean_Neighbors:
 
-    def __init__(self, train_set, test_set, test_prediction, target_variable, model):
+    # train_set and test set in pandas dataframe (do not drop the target variable)
+    # test_prediction is your output after running [model_name].predict() on your model
+    # target_variable is the string name of the target variable in your data
+    # model is the variable you stored your model in (e.g. if you have linreg = LinearRegression() then use linreg)
+    def __init__(self, train_set, test_set, test_prediction, target_variable, model, radius):
         self.train_set = train_set
         self.test_set = test_set
         self.test_prediction = test_prediction
         self.target_variable = target_variable
         self.model = model
+        self.radius = radius
 
-    # enter training set, testing set
-    # train set and test set should include the target variable
-    # test set should include the predicted values from your model
-    # make sure each row in test set corresponds to the appropriate prediction value (list)
-    # in the function we drop the target variable from test set and use prediction values instead
-
+    # creates a list of tuples for both train and test dataframe; stored as new columns in respective dataframe
+    # each tuple (coordinates) represents a data instance (row) of the dataframe
+    # adds prediction to the test_set dataframe
     def df_values_to_tuples(self):
 
         pd.options.mode.chained_assignment = None
@@ -33,12 +36,8 @@ class Euclidean_Neighbors:
 
         return train_dup, test_dup, train_tuples
 
-    # enter training set, testing set, values of the model from prediction of train set,
-    # prediction values of test set, and name of the target variable (string)
-
-    # e.g. if used sklearn, run model.predict(x_train_set) where x_train_set does not have target variable
-    # store the above in a variable and use that variable for "train_prediction" as argument in df_with_predictions
-
+    # calculates the values of the model you used on the train set
+    # calculates the difference between model values and target variable values
     def df_with_predictions(self):
 
         train_dup = self.df_values_to_tuples()[0]
@@ -46,7 +45,10 @@ class Euclidean_Neighbors:
 
         x_train_set = train_dup.drop(columns=[self.target_variable])
 
+        # assumes you are using Sklearn or Tensorflow since they use the predict() method
+        # in future I will remove this
         train_dup['Model_Output'] = self.model.predict(x_train_set)
+
         train_dup['Difference'] = train_dup[self.target_variable] - train_dup['Model_Output']
         train_dup = train_dup.reset_index()
         train_dup = train_dup.drop(columns=['index'])
@@ -60,7 +62,9 @@ class Euclidean_Neighbors:
 
         return train_dup, test_dup
 
-    def closest_points_and_difference(self, radius):
+    # checks the training coordinates that are within a certain radius from each predicted point
+    # evaluates a new predicted point which brings it closer to those neighbors
+    def closest_points_and_difference(self):
 
         train_tuples = self.df_values_to_tuples()[2]
         train_dup = self.df_with_predictions()[0]
@@ -71,7 +75,7 @@ class Euclidean_Neighbors:
         for i in range(len(test_dup['Coordinates'])):
             point = test_dup['Coordinates'][i]
             # radius = df_test_2['std_difference'][i]
-            closest_points_by_indices.append(tree.query_ball_point(point, radius))
+            closest_points_by_indices.append(tree.query_ball_point(point, self.radius))
 
         test_dup['Closest Points By Indices'] = closest_points_by_indices
 
@@ -91,3 +95,19 @@ class Euclidean_Neighbors:
         test_dup['New_Prediction'] = test_dup['Prediction'] + test_dup['Delta_Prediction']
 
         return test_dup
+
+    def model_compare(self):
+
+        df = self.closest_points_and_difference()
+
+        original_model = mean_squared_error(df['Prediction'], df[self.target_variable], squared=False)
+        new_model = mean_squared_error(df['New_Prediction'], df[self.target_variable], squared=False)
+
+        results = 'RMSE of old predictions is ' + str(original_model) + '.\nRMSE of new predictions is ' + str(new_model)
+
+        if original_model <= new_model:
+            results = results + '.\nOriginal predictions are more accurate.'
+        else:
+            results = results + '.\nNew predictions are more accurate.'
+
+        return results
