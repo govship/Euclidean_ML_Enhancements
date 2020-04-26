@@ -22,5 +22,4 @@ prediction_test = svr.predict(x_test_set)
 euclidean = Euclidean_Neighbors(train_set, test_set, prediction_test, 'target', svr, 25)
 prediction_final = euclidean.closest_points_and_difference()
 print(prediction_final)
-
 print(euclidean.model_compare())

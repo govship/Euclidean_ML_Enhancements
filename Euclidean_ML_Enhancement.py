@@ -94,7 +94,7 @@ class Euclidean_Neighbors:
         test_dup['Delta_Prediction'] = add_to_prediction
         test_dup['New_Prediction'] = test_dup['Prediction'] + test_dup['Delta_Prediction']
 
-        return test_dup
+        return test_dup['New_Prediction']
 
     def model_compare(self):
 
